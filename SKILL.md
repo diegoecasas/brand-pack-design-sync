@@ -18,6 +18,50 @@ Read `KIE_API_KEY` from the environment. Never ask for it in chat, never write i
 
 ---
 
+## Step −1 — Environment preflight (do this before anything else)
+
+`KIE_API_KEY` has to be readable from a **non-interactive** shell. This is the most common way this skill fails, and the cause is not obvious:
+
+- **`~/.zshrc` is only sourced for interactive shells.** An `export` there is invisible to tool shells. `zsh -i -c 'echo $KIE_API_KEY'` prints it; plain `zsh -c` does not.
+- **macOS GUI apps** (Claude Code launched from the Dock or Launchpad) don't inherit a terminal's environment either.
+
+So "the user swears they exported it" and "the tool can't see it" are both true at the same time. Check first:
+
+```bash
+test -n "$KIE_API_KEY" && echo "len=${#KIE_API_KEY}" || echo NOT_SET
+```
+
+If NOT_SET, **go look for it before giving up.** Probe the usual homes — report only whether it matched, never the value:
+
+```bash
+for f in ~/.zshenv ~/.zshrc ~/.zprofile ~/.zlogin ~/.bashrc ~/.bash_profile \
+         ~/.config/kie/env ~/.kie.env ./.env ../.env; do
+  [ -f "$f" ] && grep -q KIE_API_KEY "$f" && echo "found in $f"
+done
+```
+
+Then, depending on where it turned up:
+
+- **In a `.env`** → load it for this session: `set -a && source <path> && set +a`
+- **In `~/.zshrc`** → that's the interactive-only trap. The durable fix is to move that single line to `~/.zshenv`, which zsh sources on *every* invocation. Verify `.zshenv` actually reaches your tool shell first (append a sentinel var, read it back from a fresh shell, then remove it) rather than assuming.
+- **Nowhere** → ask the user to put it somewhere durable. Recommend `~/.zshenv`. Do not ask them to paste the key into chat.
+
+Always confirm with a real call, not just a `test -n`:
+
+```bash
+python3 scripts/kie.py credit
+```
+
+A balance came back → you're good. An auth error → the key is present but wrong.
+
+### If you can't find the key: stop and say so
+
+**Do not silently switch to a different deliverable.** Hand-drawing vector assets, or building the pack from stock imagery, is a *different product* than the kie.ai pack the user asked for. Report the blocker, give the exact fix, and offer the alternative as an explicit choice they accept — never as a quiet substitution they discover later.
+
+Note that Part 2 (the design system package) has **no kie.ai dependency at all** — `scaffold_design_system.py` only needs a palette. If the key is genuinely unavailable and the user still wants to move forward, offering *"I can build the design system now and generate the photography later"* is a legitimate, clearly-scoped alternative. Offering *"I'll draw the logo by hand instead"* without asking is not.
+
+---
+
 ## Part 1 — The brand pack
 
 ### kie.ai API primer
