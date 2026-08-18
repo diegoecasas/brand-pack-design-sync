@@ -1,4 +1,4 @@
-# brand-pack-design-sync
+# KIE-brand-pack-design-sync
 
 A [Claude Code](https://docs.claude.com/en/docs/agents-and-tools/claude-code/overview) skill that generates a full brand-assets pack with [kie.ai](https://kie.ai) **and compiles it into a real Claude Design system** — tokens, guideline cards, and a component library — ready to push to [claude.ai/design](https://claude.ai/design).
 
